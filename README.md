@@ -9,8 +9,8 @@ four rungs of agent memory — a visit, a visitor, what was said, the whole vall
 screen, where you can watch it fall.
 
 ```
-floor 4   the season        the whole valley   BigQuery, embedded in place chapter 6
-floor 3   the tower         what was said      Vertex AI Memory Bank       chapters 3-5
+floor 4   the season        the whole valley   BigQuery, embedded in place chapter 5
+floor 3   the tower         what was said      Vertex AI Memory Bank       chapters 3-4
 floor 2   your drawer       this visitor       the `user:` prefix          chapter 2
 floor 1   the books         every visit        SqliteSessionService        chapter 1
 the desk  the slip          this visit         session.state               chapter 1
@@ -50,7 +50,7 @@ archive/
   progress.py   how the app knows which edits you have made (it reads your code)
   tower.py      listing and forgetting: the two things ADK's memory API cannot do
   topics.py     what the tower is allowed to keep
-  season/       chapter 6 — two fixed queries against the warehouse: VECTOR_SEARCH and one GQL MATCH
+  season/       chapter 5 — two fixed queries against the warehouse: VECTOR_SEARCH and one GQL MATCH
 scripts/
   preflight.py      am I ready, and which floors are lit
   make_tower.py     build the Agent Engine that Memory Bank lives on, topics and all
