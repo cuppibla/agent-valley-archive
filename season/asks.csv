@@ -1,0 +1,35 @@
+id,visitor_id,item_id,day,season,said
+a000,v000,i000,day 33,lamplight,it goes out about an hour after I light it
+a001,v001,i001,day 41,lamplight,mine dies right when the wind picks up
+a002,v002,i002,day 16,lamplight,it only happens on the cold nights
+a003,v003,i003,day 53,lamplight,the flame sits low and then it's gone
+a004,v004,i004,day 64,lamplight,I've tried hanging it higher. No change.
+a005,v005,i005,day 22,lamplight,it burns fine for an evening and then never again
+a006,v006,i006,day 14,lamplight,"the wick looks short to me, shorter than my old one"
+a007,v007,i007,day 11,lamplight,"I bought it at the spring fair, same as everyone"
+a008,v008,i008,day 5,lamplight,"it keeps cutting out after dark, which is the only time I need it"
+a009,v009,i009,day 54,lamplight,"the glass is clean, so it isn't that"
+a010,v010,i010,day 73,lamplight,it goes out about an hour after I light it
+a011,v011,i011,day 40,lamplight,mine dies right when the wind picks up
+a012,v012,i012,day 10,lamplight,it only happens on the cold nights
+a013,v013,i013,day 31,lamplight,the flame sits low and then it's gone
+a014,v014,i014,day 69,lamplight,I've tried hanging it higher. No change.
+a015,v015,i015,day 71,lamplight,it burns fine for an evening and then never again
+a016,v016,i016,day 49,lamplight,"the wick looks short to me, shorter than my old one"
+a017,v017,i017,day 38,lamplight,"I bought it at the spring fair, same as everyone"
+a018,v018,i018,day 25,lamplight,"it keeps cutting out after dark, which is the only time I need it"
+a019,v019,i019,day 16,lamplight,"the glass is clean, so it isn't that"
+a020,v020,i020,day 36,lamplight,it goes out about an hour after I light it
+a021,v021,i021,day 30,lamplight,mine dies right when the wind picks up
+a022,v022,i022,day 6,lamplight,it only happens on the cold nights
+a023,v023,i023,day 85,lamplight,the flame sits low and then it's gone
+a024,v024,i024,day 36,lamplight,I've tried hanging it higher. No change.
+a025,v025,i025,day 37,lamplight,it burns fine for an evening and then never again
+a026,v026,i026,day 27,lamplight,"the wick looks short to me, shorter than my old one"
+a027,v027,i027,day 24,lamplight,"I bought it at the spring fair, same as everyone"
+a028,v028,i028,day 42,lamplight,"it keeps cutting out after dark, which is the only time I need it"
+a029,v029,i029,day 40,lamplight,"the glass is clean, so it isn't that"
+a030,v030,i030,day 83,lamplight,it goes out about an hour after I light it
+b000,o000,j000,day 50,lamplight,it whistles when it is empty
+b001,o001,j001,day 14,lamplight,it will not close
+b002,o002,j002,day 80,lamplight,the handle came away in my hand

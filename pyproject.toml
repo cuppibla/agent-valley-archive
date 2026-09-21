@@ -1,0 +1,21 @@
+[project]
+name = "agent-valley-archive"
+version = "0.1.0"
+description = "Agent 101 Live · week four — the Archive, and how far a memory reaches"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.139.2",
+    "google-adk>=2.5.0,<3",
+    # chapter 3's tower: VertexAiMemoryBankService imports `vertexai` from here.
+    # The range is ADK 2.8's own `gcp` extra, so the two agree on the client.
+    "google-cloud-aiplatform[agent-engines]>=1.148.1,<2",
+    # chapter 6's season: two fixed queries against the warehouse
+    "google-cloud-bigquery>=3.30",
+    "google-genai>=2.14.0,<3",
+    "pillow>=12.3.0",
+    "pydantic>=2.7",
+    "uvicorn>=0.51.0",
+]
+
+[tool.uv]
+package = false
