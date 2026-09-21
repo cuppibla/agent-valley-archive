@@ -19,7 +19,22 @@ if ! .venv/bin/python -c "import forge,sys; sys.exit(0 if forge.MODE else 1)" 2>
 fi
 
 echo "VALLEY_AGENT_URL=http://127.0.0.1:${AGENT_PORT}" > site/.env.local
-[ -d site/node_modules ] || (cd site && npm install)
+
+# The Archive (site/) is a Next.js app. Look for the `next` binary, not the
+# folder: an `npm install` that was cut short — Ctrl+C, a dropped Cloud Shell,
+# a full disk — leaves site/node_modules behind with nothing usable in it, the
+# folder check passes, and `npm run dev` dies with `sh: next: command not
+# found`. `npm ci` installs exactly what package-lock.json pins, from scratch,
+# so a half-finished tree cannot survive it.
+if ! command -v npm >/dev/null 2>&1; then
+  echo "npm not found. The Archive (site/) is a Next.js app and needs Node 20+:"
+  echo "    https://nodejs.org/en/download"
+  exit 1
+fi
+if [ ! -x site/node_modules/.bin/next ]; then
+  echo "  installing the Archive's packages (site/) — about a minute, once…"
+  (cd site && if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi)
+fi
 
 cleanup() {
   # only what this script started — never the process group, which is whoever

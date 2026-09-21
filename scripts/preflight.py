@@ -84,6 +84,13 @@ def main() -> int:
     print(f"  the tower {DIM}· " + (f"reasoningEngines/{engine.split('/')[-1]}" if engine
           else "not built yet — chapter 4 builds it") + OFF)
 
+    # The Archive (site/) is a Next.js app. Its packages are the one thing
+    # `uv sync` does not install, and a half-finished `npm install` is the one
+    # thing a folder check cannot see — so look for the binary valley.sh runs.
+    nxt = ROOT / "site" / "node_modules" / ".bin" / "next"
+    print(f"  the Archive {DIM}· " + ("site/ packages installed" if nxt.exists()
+          else "site/ packages missing — cd site && npm ci  (bash valley.sh does this too)") + OFF)
+
     print("\n  where you are:\n")
     p = progress.read(SqliteSessionService(str(ROOT / "archive.db")),
                       InMemoryMemoryService())

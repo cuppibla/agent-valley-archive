@@ -6,6 +6,7 @@
 # it; this one turns that project into a working lab environment:
 #   • aiplatform.googleapis.com + bigquery.googleapis.com enabled on it
 #   • .venv built by uv, dependencies pinned by uv.lock
+#   • site/node_modules for the Archive (a Next.js app), pinned by package-lock.json
 #   • a root .env pointing the lab at Vertex AI on that project
 #   • one real Gemini call, so you find out here and not in chapter one
 #
@@ -140,12 +141,36 @@ fi
 uv sync
 tick "uv env + google-adk / google-genai / fastapi + uvicorn / pillow (locked by uv.lock)"
 
-# The Archive itself is a Next.js app, and `bash valley.sh` will want npm. Nothing
-# in this script needs it, and Cloud Shell ships Node, so this is a heads-up
-# and not a failure — scripts/preflight.py checks it properly.
+# ── 2b · the Archive's own packages ───────────────────────────────────────────
+# The Archive itself (site/) is a Next.js app, and `bash valley.sh` in chapter
+# one needs its packages. Install them here, where a minute's wait is expected,
+# rather than silently inside valley.sh — an install interrupted there used to
+# leave a site/node_modules with no `next` in it, and the next `bash valley.sh`
+# died with `sh: next: command not found`. `npm ci` installs exactly what
+# package-lock.json pins. Skipped when the binary is already in place, so
+# re-runs cost nothing. A failure here is a warning, not a stop: valley.sh
+# makes the same check and retries the install itself.
+say "2b · The Archive's packages (site/)"
+
 if ! command -v npm >/dev/null 2>&1; then
     warn "npm not found. The agent side works without it, but site/ (the Archive)"
     warn "and 'bash valley.sh' need Node 20+:  https://nodejs.org/en/download"
+else
+    NODE_MAJOR="$(node -v 2>/dev/null | sed 's/^v//' | cut -d. -f1)"
+    if [ -n "$NODE_MAJOR" ] && [ "$NODE_MAJOR" -lt 20 ]; then
+        warn "node $(node -v) is older than Next.js wants (20+); the Archive may not start."
+    fi
+    if [ -x site/node_modules/.bin/next ]; then
+        tick "site/node_modules already has next — nothing to install"
+    else
+        info "npm ci in site/ — about a minute…"
+        if (cd site && npm ci --no-audit --no-fund); then
+            tick "site/ packages installed (npm ci, pinned by package-lock.json)"
+        else
+            warn "npm ci failed in site/. 'bash valley.sh' will try again; or by hand:"
+            warn "  cd site && npm ci"
+        fi
+    fi
 fi
 
 # ── 3 · credentials and .env ──────────────────────────────────────────────────
