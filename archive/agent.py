@@ -94,12 +94,10 @@ def write_down(field: str, value: str, tool_context: ToolContext) -> dict:
     if case.get(field):
         return {"already_written": {field: case[field]}}
     case[field] = value
-    # 👉 EDIT ONE — chapter 1. She heard you. Nothing was written. Add this
-    #    line, then save — the slip is session state, and state is written by
-    #    code, never by the conversation:
-    #
-    #     tool_context.state[CASE] = case
-    #
+    # 👉 EDIT ONE — chapter 1. She heard you. Nothing was written. Delete the
+    #    "# " in front of the next line, then save — the slip is session state,
+    #    and state is written by code, never by the conversation:
+    # tool_context.state[CASE] = case
     return {"written": {field: value}}
 
 
@@ -138,10 +136,9 @@ async def recall(ctx: Context, node_input: Any):
     if query.strip():
         try:
             # 👉 EDIT THREE — chapter 3. Filed is not remembered: the cards are on
-            #    the shelf and nobody is looking at them. Add this line, then save:
-            #
-            #     found = await ctx.search_memory(query)
-            #
+            #    the shelf and nobody is looking at them. Delete the "# " in front
+            #    of the next line, then save:
+            # found = await ctx.search_memory(query)
             pass
         except ValueError:
             # no memory service wired on this runner — degrade, do not crash
