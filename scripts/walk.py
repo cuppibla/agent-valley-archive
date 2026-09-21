@@ -98,28 +98,24 @@ class World:
         return dict(st.get("user:case") or st.get("case") or {})
 
 
-def _line_edit(path, marker_line: str, line: str, on: bool) -> None:
-    """Insert `line` just before `marker_line` (or remove it). Line-exact — the
-    👉 comment block spells the very same text, so a substring test would lie."""
-    s = path.read_text()
-    lines = s.splitlines()
-    have = any(ln == line for ln in lines)
-    out, done = [], False
-    for ln in lines:
-        if not on and ln == line:
-            continue
-        if on and not have and not done and ln == marker_line:
-            out.append(line); done = True
-        out.append(ln)
-    path.write_text(re.sub(r"\n{4,}", "\n\n\n", "\n".join(out) + "\n"))
+def _uncomment(path, commented: str, bare: str, on: bool) -> None:
+    """Toggle one 👉 line between its commented and live form. Line-exact — the
+    two forms differ only by the leading "# ", which is the whole edit."""
+    lines = path.read_text().splitlines()
+    src, dst = (commented, bare) if on else (bare, commented)
+    if any(ln == dst for ln in lines):          # already where we want it
+        return
+    path.write_text("\n".join(dst if ln == src else ln for ln in lines) + "\n")
 
 
 EDITS = {
-    # name: (file, the line the learner types, the line it goes right before)
-    "state":  ("archive/agent.py", "    tool_context.state[CASE] = case",
-               '    return {"written": {field: value}}'),
-    "recall": ("archive/agent.py", "            found = await ctx.search_memory(query)",
-               "            pass"),
+    # name: (file, the line as it ships — commented out, the line once uncommented)
+    "state":  ("archive/agent.py",
+               "    # tool_context.state[CASE] = case",
+               "    tool_context.state[CASE] = case"),
+    "recall": ("archive/agent.py",
+               "            # found = await ctx.search_memory(query)",
+               "            found = await ctx.search_memory(query)"),
 }
 
 
@@ -132,22 +128,8 @@ def edit(name: str, on: bool = True) -> None:
              else s.replace('CASE = "user:case"', 'CASE = "case"'))
         p.write_text(s)
         return
-    if name == "recall" and on:
-        # the marker is the placeholder `pass` inside the try; the line replaces it
-        p = ROOT / "archive/agent.py"; s = p.read_text()
-        if EDITS["recall"][1] not in s.splitlines():
-            s = s.replace("            #\n            pass\n        except ValueError:",
-                          "            #\n            found = await ctx.search_memory(query)\n        except ValueError:", 1)
-        p.write_text(s)
-        return
-    if name == "recall" and not on:
-        p = ROOT / "archive/agent.py"; s = p.read_text()
-        s = s.replace("            #\n            found = await ctx.search_memory(query)\n        except ValueError:",
-                      "            #\n            pass\n        except ValueError:", 1)
-        p.write_text(s)
-        return
-    f, line, marker = EDITS[name]
-    _line_edit(ROOT / f, marker, line, on)
+    f, commented, bare = EDITS[name]
+    _uncomment(ROOT / f, commented, bare, on)
 
 
 def edits_off() -> None:
