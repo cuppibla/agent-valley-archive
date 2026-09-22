@@ -319,7 +319,9 @@ elder = Agent(
         "and what was finally found to be wrong — and name who found it. Quote "
         "the path the tool returns, word for word, as your last line. Never "
         "guess a cause the tool did not return; if nothing was found, say that "
-        "nobody has worked it out yet. Never present season_search matches as "
+        "nobody has worked it out yet. If a tool answers with status locked or "
+        "error, repeat its note word for word and say nothing else — no visitors, "
+        "no cause, no path. Never present season_search matches as "
         "proof of anything: they sound alike, and that is all they are."
     ),
 )

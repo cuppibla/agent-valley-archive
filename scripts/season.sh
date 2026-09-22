@@ -97,7 +97,13 @@ SELECT * FROM GRAPH_TABLE(archive.season_graph
   MATCH (m:Mark)<-[:stamped]-(i:Item)<-[a:asked]-(v:Visitor)
   WHERE m.mark = "q7"
   OPTIONAL MATCH (m)-[:fixed]->(f:Fix)
-  RETURN m.mark AS mark, COUNT(DISTINCT v.id) AS visitors, COUNT(DISTINCT a.said) AS things_said, ANY_VALUE(f.what) AS fix)'
+  RETURN m.mark AS mark, COUNT(DISTINCT v.id) AS visitors, COUNT(DISTINCT a.said) AS things_said, ANY_VALUE(f.what) AS fix)' || {
+  echo
+  echo "    GRAPH_TABLE was refused: BigQuery graph queries need an Enterprise or"
+  echo "    Enterprise Plus reservation, and this project has none. The tables and"
+  echo "    the graph are in place. The elder walks the same rows as three SQL joins"
+  echo "    and says so in her answer — nothing else in the lab needs the reservation."
+}
 
 say "done · floor four is open"
 echo "    the app reads GOOGLE_CLOUD_PROJECT=$P from .env and looks for archive.ask_embeddings"
