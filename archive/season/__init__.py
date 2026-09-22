@@ -95,7 +95,7 @@ def is_open(*, fresh: bool = False) -> bool:
     The app asks on every poll, so the answer is cached for thirty seconds and
     refreshed on a background thread: a BigQuery round trip must never sit on
     the event loop the chat stream shares, or one slow answer turns into the
-    tower going dark. The elder's tools pass `fresh=True`, so a season loaded a
+    tower going dark. The season tools pass `fresh=True`, so a season loaded a
     moment ago is not reported locked by a stale cache.
     """
     if not os.environ.get("GOOGLE_CLOUD_PROJECT"):
