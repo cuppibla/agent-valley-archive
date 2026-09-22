@@ -51,13 +51,32 @@ gcloud projects add-iam-policy-binding "$P" --member="serviceAccount:$SA" \
   --role=roles/aiplatform.user --condition=None --quiet >/dev/null
 echo "    granted roles/aiplatform.user"
 
+# The role granted in step 6 takes a minute or so to reach the endpoint, and the
+# first thing step 7 does is use it. On a fresh project that is a certain
+# "does not have the permission to access or use the endpoint" — not a mistake,
+# just IAM propagating. Retry on that error only, for up to about two minutes.
+until_granted() {
+  local tries=0 out
+  while true; do
+    if out=$(bq --project_id="$P" query --use_legacy_sql=false "$1" 2>&1); then
+      printf '%s\n' "$out"; return 0
+    fi
+    if printf '%s' "$out" | grep -qi "permission\|does not have"; then
+      tries=$((tries + 1))
+      if [ "$tries" -ge 10 ]; then printf '%s\n' "$out" >&2; return 1; fi
+      echo "    the grant from step 6 is still propagating — waiting 15 s ($tries/10)"
+      sleep 15
+    else
+      printf '%s\n' "$out" >&2; return 1
+    fi
+  done
+}
+
 say "7 · the embedding model — one statement, and it lives in the dataset"
-bq --project_id="$P" query --use_legacy_sql=false \
-  'CREATE OR REPLACE MODEL archive.embedder REMOTE WITH CONNECTION `US.vertex_conn` OPTIONS (ENDPOINT = "gemini-embedding-001")'
+until_granted 'CREATE OR REPLACE MODEL archive.embedder REMOTE WITH CONNECTION `US.vertex_conn` OPTIONS (ENDPOINT = "gemini-embedding-001")'
 
 say "8 · every ask, embedded in place"
-bq --project_id="$P" query --use_legacy_sql=false \
-  'CREATE OR REPLACE TABLE archive.ask_embeddings AS
+until_granted 'CREATE OR REPLACE TABLE archive.ask_embeddings AS
    SELECT id, content, ml_generate_embedding_result AS embedding
    FROM ML.GENERATE_EMBEDDING(MODEL archive.embedder, (SELECT id, said AS content FROM archive.asks))'
 bq --project_id="$P" query --use_legacy_sql=false \
