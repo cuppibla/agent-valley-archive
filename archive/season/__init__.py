@@ -21,6 +21,7 @@ GOOGLE_CLOUD_PROJECT — the same two the rest of the lab already reads.
 from __future__ import annotations
 
 import os
+import threading
 import time
 from typing import Any
 
@@ -40,6 +41,7 @@ ORDER BY day"""
 
 _client = None
 _open: tuple[float, bool] = (0.0, False)
+_checking = threading.Lock()
 
 
 def _bq():
@@ -51,22 +53,44 @@ def _bq():
     return _client
 
 
-def is_open() -> bool:
-    """Has the season been loaded — do the embeddings exist? Checked at most
-    once every thirty seconds; the app asks on every message."""
+def _check() -> bool:
+    """One bounded round trip: does the embeddings table exist?"""
+    try:
+        _bq().get_table(f"{DATASET}.ask_embeddings", retry=None, timeout=8)
+        return True
+    except Exception:                                      # noqa: BLE001
+        return False
+
+
+def _refresh() -> None:
     global _open
+    if not _checking.acquire(blocking=False):              # one check at a time
+        return
+    try:
+        _open = (time.monotonic(), _check())
+    finally:
+        _checking.release()
+
+
+def is_open(*, fresh: bool = False) -> bool:
+    """Has the season been loaded — do the embeddings exist?
+
+    The app asks on every poll, so the answer is cached for thirty seconds and
+    refreshed on a background thread: a BigQuery round trip must never sit on
+    the event loop the chat stream shares, or one slow answer turns into the
+    tower going dark. The elder's tools pass `fresh=True`, so a season loaded a
+    moment ago is not reported locked by a stale cache.
+    """
+    if not os.environ.get("GOOGLE_CLOUD_PROJECT"):
+        return False
     at, was = _open
-    if time.monotonic() - at < 30:
-        return was
-    now = False
-    if os.environ.get("GOOGLE_CLOUD_PROJECT"):
-        try:
-            _bq().get_table(f"{DATASET}.ask_embeddings")
-            now = True
-        except Exception:                                  # noqa: BLE001
-            now = False
-    _open = (time.monotonic(), now)
-    return now
+    stale = time.monotonic() - at >= 30
+    if fresh and (stale or not was):
+        _refresh()                                         # on the caller's thread, bounded
+        return _open[1]
+    if stale:
+        threading.Thread(target=_refresh, daemon=True).start()
+    return was
 
 
 def _run(sql: str, **params: str) -> list[Any]:
@@ -85,7 +109,7 @@ def season_search(text: str) -> dict:
         The closest things other visitors said: who said it, the mark on what
         they brought, and a distance. The mark is where to look next.
     """
-    if not is_open():
+    if not is_open(fresh=True):
         return {"status": "locked", "note": "the season is not in the warehouse yet"}
     rows = _run("""
         SELECT v.name AS who, i.mark AS mark, base.content AS said, ROUND(distance, 3) AS distance
@@ -118,7 +142,7 @@ def season_known_issue(mark: str, season: str = SEASON) -> dict:
         How many others came about it, what they said, what was found to be
         wrong, and the path that was walked to get there.
     """
-    if not is_open():
+    if not is_open(fresh=True):
         return {"status": "locked", "note": "the season is not in the warehouse yet"}
     try:
         rows = _run(GQL, mark=mark, season=season)
