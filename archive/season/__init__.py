@@ -2,7 +2,7 @@
 
 Chapter 6 loads the valley's past into BigQuery (`scripts/season.sh`): five
 tables, embeddings generated in place, and one property graph laid over the
-tables without moving a row. The elder reads it two ways, and BOTH statements
+tables without moving a row. Vesper reads it two ways, and BOTH statements
 are fixed. The model never writes SQL or GQL: it fills in one parameter, the
 code runs the same statement every time, and the answer comes back with the
 path it walked.
@@ -27,7 +27,7 @@ from typing import Any
 DATASET = os.environ.get("BQ_DATASET", "archive")
 SEASON = "lamplight"
 
-# The one walk the elder is allowed. Read it as a sentence: start at a mark,
+# The one walk she is allowed. Read it as a sentence: start at a mark,
 # step back to every item stamped with it, back again to whoever asked about
 # each one — and, if the mark has a fix, one step forward to it.
 GQL = """

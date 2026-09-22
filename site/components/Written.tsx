@@ -52,7 +52,7 @@ export default function Written({ floors, name }: { floors: Floors | null; name:
         {open
           ? <div style={{ fontSize: 12.5, color: "var(--sub)", lineHeight: 1.5 }}>
               open — ask her <span className="mono" style={{ color: "var(--violet)" }}>
-              [season] has anyone else had a q7 lantern go out at night?</span></div>
+              has anyone else had a q7 lantern go out at night?</span></div>
           : <Empty>locked — bash scripts/season.sh</Empty>}
       </Block>
     </div>

@@ -1,17 +1,16 @@
 """The Archive — a tower that writes everything down, and an archivist who is
 pleased to meet you every single time.
 
-    START ─▶ route ─┬─ "ask"    ─▶ recall ─▶ vesper
+    START ─▶ route ─┬─ "ask"    ─▶ recall ─▶ vesper     (floor four's two tools are hers too)
                     ├─ "close"  ─▶ file ─▶ goodnight
-                    ├─ "show"   ─▶ look ─▶ vesper       [chapter 5, self-study]
-                    └─ "season" ─▶ elder                [chapter 6, optional]
+                    └─ "show"   ─▶ look ─▶ vesper       [self-study]
 
 Four rungs of memory, and each one is a floor of the tower:
 
     the desk + floor 1   this visit        session.state · SqliteSessionService
     floor 2              this visitor      the `user:` prefix
     floor 3              what was said     Vertex AI Memory Bank
-    floor 4              the whole valley  BigQuery            [chapter 6]
+    floor 4              the whole valley  BigQuery            [chapter 5, optional]
 
 Every rung up is because something fell out of the one below, and the learner
 watches it fall. Three edits are marked with 👉 and every one is a line:
@@ -114,8 +113,6 @@ def route(ctx: Context, node_input: Any):
         way = "close"
     elif low.startswith("[show]"):
         way = "show"
-    elif low.startswith("[season]"):
-        way = "season"
     else:
         way = "ask"
     return Event(message=f"route · {way}", output={"text": text},
@@ -178,6 +175,20 @@ House rules, in order:
    as written: read the mark off it, say what you read, and call write_down for
    it. This is the one thing that may come from outside the slip and the tower.
 6. Two or three short, warm sentences. Never a list.
+7. THE SEASON — floor four — is everyone else's visits, in the valley's
+   warehouse, and it is the one place you may look beyond the slip and the
+   tower. When the visitor asks whether ANYONE ELSE has had this (other
+   visitors, other customers, others): if the QUESTION names a mark, call
+   season_known_issue with it. If the question names no mark — even when the
+   slip has one — call season_search with what they described, take the mark
+   the closest matches carry, and THEN call season_known_issue with it: the
+   season is about what others brought, and sounding alike is where to look,
+   not an answer. Then say how many others, what they said in
+   common, what was found to be wrong and who found it — four short sentences
+   are fine here — and quote the tool's path word for word as your last line.
+   If a tool answers with status locked or error, repeat its note word for word
+   and say nothing else. Never guess a cause a tool did not return, and never
+   present season_search matches as proof of anything.
 """
 
 
@@ -212,7 +223,11 @@ vesper = Agent(
     name="vesper",
     model=MODEL,
     generate_content_config=FAST,
-    tools=[write_down],
+    # Her pen, and floor four's two fixed queries (chapter 5). Both of those are
+    # statements in `archive/season/` that she fills one parameter into; she
+    # never writes SQL or GQL. The model fills in the form, the code moves the
+    # sparks — and the visitor just asks whether anyone else has had this.
+    tools=[write_down, season.season_search, season.season_known_issue],
     instruction=house,
 )
 
@@ -295,46 +310,12 @@ async def look(ctx: Context, node_input: Any):
             shown]))
 
 
-# ── floor four ──────────────────────────────────────────────────────────────
-# Two tools, and neither takes a query. One is a VECTOR_SEARCH, one is a GQL
-# MATCH through the property graph; both are fixed statements in
-# `archive/season/`, and the elder fills in a mark or a sentence. The model
-# never writes SQL or GQL. That is week three's sentence in a new room: the
-# model fills in the form, the code moves the sparks.
-elder = Agent(
-    name="elder",
-    model=MODEL,
-    generate_content_config=FAST,
-    tools=[season.season_search, season.season_known_issue],
-    instruction=(
-        "You keep floor four of the Archive — the season, which is everyone "
-        "else's visits, in the valley's warehouse. A visitor has asked whether "
-        "anyone else has had this.\n\n"
-        "If the message names a mark — a short stamp such as q7, anywhere in the "
-        "sentence — call season_known_issue with it and the season (no season "
-        "given: use 'lamplight'). If it names no mark, call "
-        "season_search with what the visitor described, take the mark the "
-        "closest matches carry, and THEN call season_known_issue with it — "
-        "sounding alike is where to look, not an answer. Then answer in three or four short "
-        "sentences, in this order: how many others, what they said in common, "
-        "and what was finally found to be wrong — and name who found it. Quote "
-        "the path the tool returns, word for word, as your last line. Never "
-        "guess a cause the tool did not return; if nothing was found, say that "
-        "nobody has worked it out yet. If a tool answers with status locked or "
-        "error, repeat its note word for word and say nothing else — no visitors, "
-        "no cause, no path. Never present season_search matches as "
-        "proof of anything: they sound alike, and that is all they are."
-    ),
-)
-
-
 # ── the wire ────────────────────────────────────────────────────────────────
 root_agent = Workflow(
     name="archive",
     description="A tower that writes everything down, and an archivist who keeps it.",
     edges=[
-        ("START", route, {"ask": recall, "close": file, "show": look,
-                          "season": elder}),
+        ("START", route, {"ask": recall, "close": file, "show": look}),
         (recall, vesper),
         (file, goodnight),
         (look, vesper),

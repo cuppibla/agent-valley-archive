@@ -101,7 +101,7 @@ SELECT * FROM GRAPH_TABLE(archive.season_graph
   echo
   echo "    GRAPH_TABLE was refused: BigQuery graph queries need an Enterprise or"
   echo "    Enterprise Plus reservation, and this project has none. The tables and"
-  echo "    the graph are in place. The elder walks the same rows as three SQL joins"
+  echo "    the graph are in place. Vesper walks the same rows as three SQL joins"
   echo "    and says so in her answer — nothing else in the lab needs the reservation."
 }
 
