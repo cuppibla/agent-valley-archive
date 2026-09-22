@@ -111,18 +111,27 @@ CREATE OR REPLACE PROPERTY GRAPH archive.season_graph
                                         DESTINATION KEY (mark) REFERENCES Fix (mark))'
 
 say "11 · one walk through it — a mark, everyone who came about it, and the cause"
-bq --project_id="$P" query --use_legacy_sql=false '
+# On an on-demand project BigQuery refuses this one statement: graph queries
+# need an Enterprise or Enterprise Plus reservation. That refusal is expected
+# and harmless — everything the lab needs is already in place — so it gets a
+# calm explanation instead of a red error. Any OTHER failure here is real and
+# stops the script the way every other step does.
+if WALK=$(bq --project_id="$P" query --use_legacy_sql=false '
 SELECT * FROM GRAPH_TABLE(archive.season_graph
   MATCH (m:Mark)<-[:stamped]-(i:Item)<-[a:asked]-(v:Visitor)
   WHERE m.mark = "q7"
   OPTIONAL MATCH (m)-[:fixed]->(f:Fix)
-  RETURN m.mark AS mark, COUNT(DISTINCT v.id) AS visitors, COUNT(DISTINCT a.said) AS things_said, ANY_VALUE(f.what) AS fix)' || {
-  echo
-  echo "    GRAPH_TABLE was refused: BigQuery graph queries need an Enterprise or"
-  echo "    Enterprise Plus reservation, and this project has none. The tables and"
-  echo "    the graph are in place. Vesper walks the same rows as three SQL joins"
-  echo "    and says so in her answer — nothing else in the lab needs the reservation."
-}
+  RETURN m.mark AS mark, COUNT(DISTINCT v.id) AS visitors, COUNT(DISTINCT a.said) AS things_said, ANY_VALUE(f.what) AS fix)' 2>&1); then
+  printf '%s\n' "$WALK"
+elif printf '%s' "$WALK" | grep -q "reservation with Enterprise"; then
+  echo "    BigQuery refused the walk: graph queries need an Enterprise or Enterprise"
+  echo "    Plus reservation, and this project has none. That is the only thing the"
+  echo "    edition blocks — the tables, the embeddings and the graph are all in place."
+  echo "    Vesper walks the same rows as three SQL joins and says so in her answer."
+else
+  printf '%s\n' "$WALK" >&2
+  exit 1
+fi
 
 say "done · floor four is open"
 echo "    the app reads GOOGLE_CLOUD_PROJECT=$P from .env and looks for archive.ask_embeddings"
