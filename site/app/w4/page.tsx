@@ -41,6 +41,8 @@ export default function Archive() {
   const [rising, setRising] = useState<string[] | null>(null);
   const sid = useRef(""); const k = useRef(0); const box = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
+  const lastRefresh = useRef(0);   // when the service last answered, for the focus throttle
+  const fails = useRef(0);         // misses in a row — one slow answer is not a dead process
 
   const say = (who: Bubble["who"], t: string) =>
     setChat((c) => [...c, { who, text: t, k: k.current++ }]);
@@ -50,33 +52,50 @@ export default function Archive() {
     const el = box.current; if (el) el.scrollTop = el.scrollHeight;
   }, [chat, busy]);
 
-  const restore = useCallback(async () => {
+  // Ask the service about this visit. `withChat` rebuilds the transcript from
+  // the server's events — on the first paint of a visit only. After that the
+  // transcript is what you watched happen: re-keying every bubble on every
+  // refresh was a flicker, and the old rebuild dropped any message that began
+  // with "[", which is how a `[season]` question used to vanish.
+  const restore = useCallback(async (withChat = false) => {
     if (!sid.current) return;
     const s = await fetch(`/api/w4/session/${sid.current}`).then((r) => r.json()).catch(() => null);
-    if (!s || s.down) { setDown(true); return; }
-    setDown(false);
+    if (!s || s.down) { if (++fails.current >= 2) setDown(true); return; }
+    fails.current = 0; setDown(false); lastRefresh.current = Date.now();
     if (s.progress) setProg(s.progress);
     if (s.floors) setFloors(s.floors);
+    if (!withChat) return;
     const bs: Bubble[] = [];
     for (const e of (s.events ?? []) as { author: string; node: string; text: string }[]) {
-      if (e.author === "user") { if (!e.text.startsWith("[")) bs.push({ who: "me", text: e.text, k: k.current++ }); }
-      else if (["vesper", "goodnight"].includes(e.node))
+      if (e.author === "user") {
+        // `[close]` is what the 🌙 button sends — show the button, not the tag
+        const t = e.text.startsWith("[close]") ? "🌙 that's all for today" : e.text;
+        bs.push({ who: "me", text: t, k: k.current++ });
+      } else if (["vesper", "goodnight"].includes(e.node))
         bs.push({ who: "v", text: e.text, k: k.current++ });
     }
     setChat(bs);
   }, []);
 
   // The service re-reads your code on every message, but you also edit between
-  // messages — so the tower asks again whenever the window comes back.
-  const poll = useCallback(async () => {
+  // messages — so the tower asks again when the window comes back. Floors and
+  // progress only, never the transcript; not while a stream is already updating
+  // the floors; not more than once every few seconds; and two misses in a row
+  // before the tower decides the process is gone.
+  const poll = useCallback(async (opts: { chat?: boolean; force?: boolean } = {}) => {
+    if (!opts.force && !opts.chat) {
+      if (busyRef.current) return;
+      if (Date.now() - lastRefresh.current < 2500) return;
+    }
     const p = await fetch("/api/w4/progress").then((r) => r.json()).catch(() => null);
-    if (p && !p.down) { setProg(p); setDown(false); restore(); } else setDown(true);
+    if (p && !p.down) { fails.current = 0; setProg(p); setDown(false); restore(Boolean(opts.chat)); }
+    else if (++fails.current >= 2) setDown(true);
   }, [restore]);
 
   useEffect(() => {
     sid.current = localStorage.getItem(SID_KEY) || "";
     if (!sid.current) { sid.current = newSid(); localStorage.setItem(SID_KEY, sid.current); }
-    poll();
+    poll({ chat: true });
     const back = () => { if (document.visibilityState === "visible") poll(); };
     document.addEventListener("visibilitychange", back);
     window.addEventListener("focus", back);
@@ -87,7 +106,7 @@ export default function Archive() {
   // goes dark and keeps knocking until `bash valley.sh` opens it again.
   useEffect(() => {
     if (!down) return;
-    const t = setInterval(poll, 1500);
+    const t = setInterval(() => poll(), 2000);
     return () => clearInterval(t);
   }, [down, poll]);
 
@@ -151,7 +170,7 @@ export default function Archive() {
     sid.current = newSid(); localStorage.setItem(SID_KEY, sid.current);
     setChat([]);
     say("sys", "🗓 a month later — a brand-new visit, same visitor");
-    poll();
+    poll({ force: true });
   }
 
   async function forget() {

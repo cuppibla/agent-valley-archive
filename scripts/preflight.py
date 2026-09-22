@@ -47,7 +47,7 @@ def bar(p: dict) -> list[str]:
          p["memory_store"], "chapter 4 · built, not edited"),
         ("floor 3", bool(p["topics"]), "the rules",
          ", ".join(p["topics"]) if p["topics"] else "the tower keeps everything",
-         "chapter 5, read only"),
+         "chapter 4, read only"),
     ]
     return [f"  {where}   {TICK if done else BOX} {name:<14}{DIM}· {how:<34}{note}{OFF}"
             for where, done, name, how, note in rows]
@@ -83,6 +83,13 @@ def main() -> int:
     engine = os.environ.get("AGENT_ENGINE", "")
     print(f"  the tower {DIM}· " + (f"reasoningEngines/{engine.split('/')[-1]}" if engine
           else "not built yet — chapter 4 builds it") + OFF)
+
+    # The Archive (site/) is a Next.js app. Its packages are the one thing
+    # `uv sync` does not install, and a half-finished `npm install` is the one
+    # thing a folder check cannot see — so look for the binary valley.sh runs.
+    nxt = ROOT / "site" / "node_modules" / ".bin" / "next"
+    print(f"  the Archive {DIM}· " + ("site/ packages installed" if nxt.exists()
+          else "site/ packages missing — cd site && npm ci  (bash valley.sh does this too)") + OFF)
 
     print("\n  where you are:\n")
     p = progress.read(SqliteSessionService(str(ROOT / "archive.db")),
