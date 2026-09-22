@@ -395,7 +395,7 @@ async def ch6(w: World) -> None:
     if await w.sessions.get_session(app_name=APP, user_id=USER, session_id=sid) is None:
         await w.sessions.create_session(app_name=APP, user_id=USER, session_id=sid)
     msg = types.Content(role="user",
-                        parts=[types.Part(text="[season] mark q7, season lamplight")])
+                        parts=[types.Part(text="[season] has anyone else had a q7 lantern go out at night?")])
     async for ev in w.runner().run_async(user_id=USER, session_id=sid, new_message=msg):
         info = (ev.model_dump().get("node_info") or {})
         if (info.get("path") or "").split("/")[-1].split("@")[0] == "elder":
@@ -413,7 +413,7 @@ async def ch6(w: World) -> None:
     if await w.sessions.get_session(app_name=APP, user_id=USER, session_id=sid) is None:
         await w.sessions.create_session(app_name=APP, user_id=USER, session_id=sid)
     msg = types.Content(role="user",
-                        parts=[types.Part(text="[season] a lantern that keeps dying once the sun is down")])
+                        parts=[types.Part(text="[season] has anyone else had a lantern that keeps dying once the sun is down?")])
     async for ev in w.runner().run_async(user_id=USER, session_id=sid, new_message=msg):
         for part in ((ev.content.parts if ev.content else []) or []):
             if part.function_call:
