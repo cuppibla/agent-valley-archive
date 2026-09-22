@@ -175,15 +175,26 @@ House rules, in order:
    as written: read the mark off it, say what you read, and call write_down for
    it. This is the one thing that may come from outside the slip and the tower.
 6. Two or three short, warm sentences. Never a list.
-7. THE SEASON — floor four — is everyone else's visits, in the valley's
-   warehouse, and it is the one place you may look beyond the slip and the
-   tower. When the visitor asks whether ANYONE ELSE has had this (other
-   visitors, other customers, others): if the QUESTION names a mark, call
-   season_known_issue with it. If the question names no mark — even when the
-   slip has one — call season_search with what they described, take the mark
-   the closest matches carry, and THEN call season_known_issue with it: the
-   season is about what others brought, and sounding alike is where to look,
-   not an answer. Then say how many others, what they said in
+{season}
+"""
+
+
+# Rule 7 has two versions, and the warehouse decides which one she reads —
+# never the model. Before `scripts/season.sh` she does not hold floor four's
+# tools, so the rule must not name them either: a rule that names a tool she
+# does not have is an invitation to call it anyway.
+SEASON_OPEN_RULE = """7. THE SEASON — floor four — is everyone else's visits, in the valley's
+   warehouse. Use season_search and season_known_issue ONLY when the visitor
+   asks about other people — anyone else, others, other visitors, other
+   customers. Never for the visitor's own trouble, never to check a cause on
+   your own, never while the visitor is telling you something; then you
+   answer from the slip and the tower as always. When they do ask about
+   others: if the QUESTION names a mark, call season_known_issue with it. If
+   the question names no mark — even when the slip has one — call
+   season_search with what they described, take the mark the closest matches
+   carry, and THEN call season_known_issue with it: the season is about what
+   others brought, and sounding alike is where to look, not an answer. Then
+   say how many others, what they said in
    common, what was found to be wrong and who found it — four short sentences
    are fine here — and quote the tool's path IN FULL, word for word, as your
    last line. If the tool's `walked` says the walk was done as SQL joins, say
@@ -191,8 +202,15 @@ House rules, in order:
    reservation, so the same rows came back through three joins.
    If a tool answers with status locked or error, repeat its note word for word
    and say nothing else. Never guess a cause a tool did not return, and never
-   present season_search matches as proof of anything.
-"""
+   present season_search matches as proof of anything."""
+
+SEASON_CLOSED_RULE = """7. Floor four — the season, everyone else's visits — is not open yet. If the
+   visitor asks whether anyone else has had this, say that the season is not
+   in the warehouse yet, and go on from the slip and the tower as always."""
+
+# Evaluated on every re-import of this file (the service re-imports it on each
+# message), so the day the warehouse opens, her next message has the key.
+SEASON_OPEN = season.is_open()
 
 
 def _slip_lines(slip: dict) -> str:
@@ -219,18 +237,31 @@ def house(ctx: ReadonlyContext) -> str:
     a Python dict.
     """
     return HOUSE.format(slip=_slip_lines(dict(ctx.state.get(CASE) or {})),
-                        tower=_tower_lines(list(ctx.state.get(RECALLED) or [])))
+                        tower=_tower_lines(list(ctx.state.get(RECALLED) or [])),
+                        season=SEASON_OPEN_RULE if SEASON_OPEN else SEASON_CLOSED_RULE)
+
+
+def tools_for_vesper() -> list:
+    """Her pen — and floor four's key, only once the warehouse exists.
+
+    The two season queries are statements in `archive/season/` that she fills
+    one parameter into; she never writes SQL or GQL. She holds them only when
+    `scripts/season.sh` has run: the service re-imports this module on every
+    message, so the day the warehouse opens her next message has them, and
+    before that she cannot reach floor four at all — a description of your own
+    trouble can never be mistaken for a question about everyone else's.
+    """
+    pen = [write_down]
+    if SEASON_OPEN:
+        pen += [season.season_search, season.season_known_issue]
+    return pen
 
 
 vesper = Agent(
     name="vesper",
     model=MODEL,
     generate_content_config=FAST,
-    # Her pen, and floor four's two fixed queries (chapter 5). Both of those are
-    # statements in `archive/season/` that she fills one parameter into; she
-    # never writes SQL or GQL. The model fills in the form, the code moves the
-    # sparks — and the visitor just asks whether anyone else has had this.
-    tools=[write_down, season.season_search, season.season_known_issue],
+    tools=tools_for_vesper(),
     instruction=house,
 )
 
