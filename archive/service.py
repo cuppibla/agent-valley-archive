@@ -7,8 +7,9 @@ store is one Memory Bank both can reach.
 
 The graph is re-imported on every request, so an edit in `archive/agent.py` or
 `archive/state.py` changes what the tower does without restarting anything.
-Connecting the tower is a change to `.env`, and that needs a restart — the
-codelab says so where it asks for it.
+Connecting the tower is a change to `.env`, and `.env` is re-read on every
+request too — so nothing in this lab is ever restarted, and nothing is ever
+Ctrl+C'd.
 """
 
 from __future__ import annotations
@@ -16,10 +17,17 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import sys
 import time
 from pathlib import Path
 from typing import Any
+
+# Captured BEFORE `forge` copies `.env` into the environment: an AGENT_ENGINE
+# that was already in the shell when the service started — even an empty one —
+# pins the tower for the life of this process. That is how the capture rig runs
+# the early chapters on the in-process tower while `.env` names a real one.
+_PINNED_ENGINE = os.environ.get("AGENT_ENGINE") if "AGENT_ENGINE" in os.environ else None
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -91,19 +99,65 @@ class Counted(BaseMemoryService):
 # in-process keyword memory until `.env` names a tower — then the SAME write
 # and recall (chapter 3's `add_events_to_memory`, `recall`'s `search_memory`)
 # talk to Vertex AI Memory Bank instead. `scripts/make_tower.py` builds one and
-# writes AGENT_ENGINE here; `adk web --memory_service_uri agentengine://…`
-# is the same connection in the workbench's spelling.
-AGENT_ENGINE = os.environ.get("AGENT_ENGINE", "")
-if AGENT_ENGINE:
-    from google.adk.memory import VertexAiMemoryBankService
+# writes AGENT_ENGINE into `.env`; the Archive re-reads that file on every
+# request, so the tower is connected the moment the script finishes.
+def tower_service(engine: str) -> BaseMemoryService:
+    """The memory service for a tower name — or, with none, for her head."""
+    if engine:
+        from google.adk.memory import VertexAiMemoryBankService
 
-    _memory = Counted(VertexAiMemoryBankService(
-        project=os.environ["GOOGLE_CLOUD_PROJECT"],                   # which project
-        location=os.environ.get("MEMORY_BANK_LOCATION", "us-central1"),  # where it lives
-        agent_engine_id=AGENT_ENGINE.split("/")[-1],                  # WHICH tower
-    ))
-else:
-    _memory = Counted(InMemoryMemoryService())
+        return VertexAiMemoryBankService(
+            project=os.environ["GOOGLE_CLOUD_PROJECT"],                      # which project
+            location=os.environ.get("MEMORY_BANK_LOCATION", "us-central1"),   # where it lives
+            agent_engine_id=engine.split("/")[-1],                           # WHICH tower
+        )
+    return InMemoryMemoryService()
+
+
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+
+
+def _engine_named_in_env() -> str:
+    """AGENT_ENGINE as `.env` has it right now — not as it was at start."""
+    if _PINNED_ENGINE is not None:
+        return _PINNED_ENGINE
+    if not ENV_FILE.exists():
+        return ""
+    for line in ENV_FILE.read_text().splitlines():
+        m = re.match(r"\s*AGENT_ENGINE\s*=\s*(.*)", line)
+        if m:
+            return m.group(1).strip().strip('"').strip("'")
+    return ""
+
+
+_memory: Counted = Counted(InMemoryMemoryService())
+_memory_engine = ""
+
+
+def _refresh_memory() -> None:
+    """Swap the memory service when `.env` starts (or stops) naming a tower.
+
+    Called on every request, and once at import so the scripts that borrow
+    `_memory` (scripts/shelf.py) see the same tower the Archive does.
+    """
+    global _memory, _memory_engine
+    engine = _engine_named_in_env()
+    if engine == _memory_engine:
+        return
+    _memory = Counted(tower_service(engine))
+    _memory_engine = engine
+
+
+_refresh_memory()
+
+
+@app.middleware("http")
+async def _reread_env(request: Request, call_next):
+    """Chapter 4 connects the tower by writing one line into `.env`. It is read
+    here, on every request, so that line takes effect on the next message."""
+    _refresh_memory()
+    return await call_next(request)
+
 
 def _probe() -> dict[str, Any]:
     return progress.read(_sessions, _memory, db=DB)
