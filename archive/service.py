@@ -254,7 +254,7 @@ def _events(sess) -> list[dict]:
         text = _text_of(ev)
         if not text:
             continue
-        out.append({"author": ev.author, "node": _node_of(ev), "text": text[:400],
+        out.append({"author": ev.author, "node": _node_of(ev), "text": text[:2000],
                     "delta": dict(ev.actions.state_delta or {}) if ev.actions else {},
                     "at": ev.timestamp})
     return out
@@ -291,7 +291,7 @@ async def _run(sid: str, message: types.Content):
                 continue
             text = _text_of(ev)
             sd = dict(ev.actions.state_delta or {}) if ev.actions else {}
-            yield _sse("node", node=node, text=text[:400], delta=sd,
+            yield _sse("node", node=node, text=text[:2000], delta=sd,
                        route=(ev.actions.route if ev.actions else None),
                        at=round(time.monotonic() - t0, 2))
     except Exception as exc:                               # noqa: BLE001
