@@ -1,7 +1,8 @@
 """Build the tower — the Agent Engine instance that hosts your Memory Bank.
 
-One SDK call. It prints the resource name you will use everywhere else and
-writes it into `.env` as AGENT_ENGINE, so you never type it. About a minute.
+One SDK call. It writes the resource name into `.env` as AGENT_ENGINE, so you
+never type it, and the Archive reads that file on every request, so there is
+nothing to restart. About a minute.
 
     uv run python scripts/make_tower.py
 
@@ -77,9 +78,9 @@ def main() -> int:
     remember(resource)
     print(f"\n  resource: {resource}")
     print(f"  AGENT_ENGINE written to .env\n")
-    print("  Next — the same tower from both windows:")
-    print(f'    adk web:    --memory_service_uri "agentengine://{resource}"')
-    print("    the app:    Ctrl+C, then bash valley.sh  (it reads .env)\n")
+    print("  Next — nothing to restart. The Archive reads .env on every message:")
+    print("    look at floor three — under the cards it now says Memory Bank.")
+    print(f'    (adk web, if you use it:  --memory_service_uri "agentengine://{resource}")\n')
     return 0
 
 

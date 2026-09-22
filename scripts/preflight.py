@@ -47,7 +47,7 @@ def bar(p: dict) -> list[str]:
          p["memory_store"], "chapter 4 · built, not edited"),
         ("floor 3", bool(p["topics"]), "the rules",
          ", ".join(p["topics"]) if p["topics"] else "the tower keeps everything",
-         "chapter 5, read only"),
+         "chapter 4, read only"),
     ]
     return [f"  {where}   {TICK if done else BOX} {name:<14}{DIM}· {how:<34}{note}{OFF}"
             for where, done, name, how, note in rows]
