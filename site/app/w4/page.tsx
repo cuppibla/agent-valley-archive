@@ -71,7 +71,7 @@ export default function Archive() {
         // `[close]` is what the 🌙 button sends — show the button, not the tag
         const t = e.text.startsWith("[close]") ? "🌙 that's all for today" : e.text;
         bs.push({ who: "me", text: t, k: k.current++ });
-      } else if (["vesper", "goodnight", "elder"].includes(e.node))
+      } else if (["vesper", "goodnight"].includes(e.node))
         bs.push({ who: "v", text: e.text, k: k.current++ });
     }
     setChat(bs);
@@ -131,7 +131,7 @@ export default function Archive() {
         const d = JSON.parse(c.slice(6));
         if (d.kind === "progress") setProg(d);
         else if (d.kind === "node") {
-          if ((d.node === "vesper" || d.node === "goodnight" || d.node === "elder") && d.text) say("v", d.text);
+          if ((d.node === "vesper" || d.node === "goodnight") && d.text) say("v", d.text);
         } else if (d.kind === "state") {
           setFloors(d.floors);
           if (d.progress) setProg(d.progress);

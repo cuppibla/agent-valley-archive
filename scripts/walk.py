@@ -395,15 +395,15 @@ async def ch6(w: World) -> None:
     if await w.sessions.get_session(app_name=APP, user_id=USER, session_id=sid) is None:
         await w.sessions.create_session(app_name=APP, user_id=USER, session_id=sid)
     msg = types.Content(role="user",
-                        parts=[types.Part(text="[season] mark q7, season lamplight")])
+                        parts=[types.Part(text="Has anyone else had a q7 lantern go out at night?")])
     async for ev in w.runner().run_async(user_id=USER, session_id=sid, new_message=msg):
         info = (ev.model_dump().get("node_info") or {})
-        if (info.get("path") or "").split("/")[-1].split("@")[0] == "elder":
+        if (info.get("path") or "").split("/")[-1].split("@")[0] == "vesper":
             parts = (ev.content.parts if ev.content else []) or []
             text = " ".join(p.text.strip() for p in parts if p.text and p.text.strip())
             said = text or said
     low = said.lower()
-    check("the elder answers from the warehouse, path and all",
+    check("she answers from the warehouse, path and all",
           ("31" in said or "thirty-one" in low) and "wick" in low and "→" in said, said[:110])
 
     # no mark in the message: she must search first, take the mark the matches
@@ -413,17 +413,17 @@ async def ch6(w: World) -> None:
     if await w.sessions.get_session(app_name=APP, user_id=USER, session_id=sid) is None:
         await w.sessions.create_session(app_name=APP, user_id=USER, session_id=sid)
     msg = types.Content(role="user",
-                        parts=[types.Part(text="[season] a lantern that keeps dying once the sun is down")])
+                        parts=[types.Part(text="Has anyone else had a lantern that keeps dying once the sun is down?")])
     async for ev in w.runner().run_async(user_id=USER, session_id=sid, new_message=msg):
         for part in ((ev.content.parts if ev.content else []) or []):
             if part.function_call:
                 calls.append(part.function_call.name)
         info = (ev.model_dump().get("node_info") or {})
-        if (info.get("path") or "").split("/")[-1].split("@")[0] == "elder":
+        if (info.get("path") or "").split("/")[-1].split("@")[0] == "vesper":
             parts = (ev.content.parts if ev.content else []) or []
             text = " ".join(p.text.strip() for p in parts if p.text and p.text.strip())
             said = text or said
-    check("with no mark, the elder searches first and walks second",
+    check("with no mark, she searches first and walks second",
           calls[:1] == ["season_search"] and "season_known_issue" in calls, " → ".join(calls))
     check("...and still arrives at the thirty-one, with the path",
           ("31" in said or "thirty-one" in said.lower()) and "→" in said, said[:110])
